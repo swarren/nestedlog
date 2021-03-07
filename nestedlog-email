@@ -1,0 +1,146 @@
+#!/bin/bash
+
+# Copyright 2021 Stephen Warren <swarren@wwwdotorg.org>
+# SPDX-License-Identifier: MIT
+
+set -e
+
+function usage_and_exit {
+    cat > /dev/stderr <<EOF
+usage_and_exit: $0 command...
+-f from      Email from address.
+             (Mandatory)
+-t to        Email to address.
+             (Mandatory)
+             (Can be specified multiple times)
+-s subject   Email subject.
+             (Mandatory)
+command...   The command and arguments to execute.
+EOF
+    exit 1
+}
+
+mail_from=
+mail_tos=()
+mail_subject=
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -f)
+            if [ -z "$2" ]; then
+                echo "ERROR: -f requires an argument" > /dev/stderr
+                usage_and_exit
+            fi
+            mail_from="$2"
+            shift
+            ;;
+        -t)
+            if [ -z "$2" ]; then
+                echo "ERROR: -t requires an argument" > /dev/stderr
+                usage_and_exit
+            fi
+            mail_tos+=("$2")
+            shift
+            ;;
+        -s)
+            if [ -z "$2" ]; then
+                echo "ERROR: -s requires an argument" > /dev/stderr
+                usage_and_exit
+            fi
+            mail_subject="$2"
+            shift
+            ;;
+        -h)
+            usage_and_exit
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            echo "Unknown option: $1" > /dev/stderr
+            usage_and_exit
+            ;;
+        *)
+            break
+            ;;
+    esac
+    shift
+done
+
+if [ -z "${mail_from}" ]; then
+    echo "ERROR: -f not specified" > /dev/stderr
+    usage_and_exit
+fi
+
+if [ ${#mail_tos} -eq 0 ]; then
+    echo "ERROR: -t not specified" > /dev/stderr
+    usage_and_exit
+fi
+
+if [ -z "${mail_subject}" ]; then
+    echo "ERROR: -s not specified" > /dev/stderr
+    usage_and_exit
+fi
+
+function cleanup {
+    set +e
+    [ -n "${tmp_dir}" ] && rm -rf "${tmp_dir}"
+}
+tmp_dir=$(mktemp -d)
+trap cleanup exit 
+
+log_html="${tmp_dir}/log.html"
+log_text="${tmp_dir}/log.txt"
+multipart="${tmp_dir}/mulitpart.txt"
+
+set +e
+nestedlog log --emit-html-inline "${log_html}" --emit-text "${log_text}" "$@"
+cmd_ret=$?
+set -e
+if [ ${cmd_ret} -eq 0 ]; then
+    mail_subject="(OK) ${mail_subject}"
+elif [ ${cmd_ret} -eq 100 ]; then
+    mail_subject="(WARNING) ${mail_subject}"
+else
+    mail_subject="(ERROR) ${mail_subject}"
+fi
+
+rm -f "${multipart}"
+
+echo -n "Date: " >> "${multipart}"
+date -R >> "${multipart}"
+
+for to in "${mail_tos[@]}"; do
+    echo "To: <${to}>" >> "${multipart}"
+done
+
+cat >> "${multipart}" <<EOF
+From: <${mail_from}>
+Subject: ${mail_subject}
+Content-type: multipart/alternative; boundary="XXXXX_multipart_XXXXX"
+
+--XXXXX_multipart_XXXXX
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+
+EOF
+
+cat >> "${multipart}" < "${log_text}"
+
+cat >> "${multipart}" <<EOF
+
+--XXXXX_multipart_XXXXX
+Content-type: text/html; charset=utf-8
+Content-transfer-encoding: 8BIT
+
+EOF
+
+cat >> "${multipart}" < "${log_html}"
+
+cat >> "${multipart}" <<EOF
+
+--XXXXX_multipart_XXXXX--
+EOF
+
+sendmail -bm "${mail_tos[@]}" < "${multipart}"

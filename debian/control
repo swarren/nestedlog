@@ -1,0 +1,28 @@
+# Copyright 2021 Stephen Warren <swarren@wwwdotorg.org>
+# SPDX-License-Identifier: MIT
+
+Source: nestedlog
+Section: devel
+Priority: optional
+Maintainer: Stephen Warren <swarren@wwwdotorg.org>
+Build-Depends:
+ , debhelper (>= 11)
+ , libfuse3-dev
+ , python3-dev
+ , python3-setuptools
+Standards-Version: 4.2.1
+
+Package: nestedlog
+Architecture: any
+Multi-Arch: same
+Section: libs
+Depends:
+ , bash
+ , ${shlibs:Depends}
+ , ${python3:Depends}
+ , ${misc:Depends}
+Description: A block-based log capture utility with formatted output
+ Executes a logged command. Captures stdout and stderr separately. Generates
+ a log file that shows which stream the data came from and how it was
+ interleaved. Can break the log into separate blocks to highlight which
+ actions passed or failed.

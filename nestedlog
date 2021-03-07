@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+
+# Copyright 2021 Stephen Warren <swarren@wwwdotorg.org>
+# SPDX-License-Identifier: MIT
+
+import argparse
+import sys
+
+cli = argparse.ArgumentParser(
+    sys.argv[0],
+    description=f'''\
+Create a nested log, or control the current nested log generator.
+
+Run "{sys.argv[0]} subcommand --help" for details.
+'''
+)
+subparsers = cli.add_subparsers(dest='subcommand')
+
+def subcommand(*args, name=None, parent=subparsers):
+    def decorator(func, name=name):
+        if name is None:
+            name = func.__name__
+        parser = parent.add_parser(name, description=func.__doc__)
+        for arg in args:
+            arg(parser)
+        parser.set_defaults(func=func)
+    return decorator
+
+def argument(*name_or_flags, **kwargs):
+    def action(parser):
+        parser.add_argument(*name_or_flags, **kwargs)
+    return action
+
+@subcommand(
+    argument('--emit-html', metavar='filename', help='emit HTML output to file'),
+    argument('--emit-html-inline', metavar='filename', help='emit HTML with inline styles to file'),
+    argument('--emit-text', metavar='filename', help='emit plain-text output to file'),
+    argument('command', nargs=argparse.REMAINDER, help='Command to run'),
+)
+def log(args):
+    '''Generate a nested log. Runs a command, captures the output, and emits
+    various log files.'''
+
+    import nestedlog.data as nld
+    import nestedlog.impl as nlimpl
+    emitters = []
+    if args.emit_html:
+        import nestedlog.emitter_html as emhtml
+        emitters.append(emhtml.Emitter(args.emit_html))
+    if args.emit_html_inline:
+        import nestedlog.emitter_html_inline as emhtmli
+        emitters.append(emhtmli.Emitter(args.emit_html_inline))
+    if args.emit_text:
+        import nestedlog.emitter_plain_text as emplain
+        emitters.append(emplain.Emitter(args.emit_text))
+    if not emitters:
+        raise Exception('No emitters defined')
+    status = nlimpl.gen_log(emitters, args.command)
+    if status == nld.STATUS_OK:
+        sys.exit(0)
+    if status == nld.STATUS_WARNING:
+        sys.exit(100)
+    sys.exit(1)
+
+@subcommand(
+    argument('block_name', help='block name'),
+    argument('command', nargs=argparse.REMAINDER, help='command to run'),
+    name='run-as-block'
+)
+def cmd_run_as_block(args):
+    '''Within a current nestedlog session, run a command and capture the
+    output as its own block.'''
+
+    import nestedlog.api as nlapi
+    nlapi.run_as_block(args.block_name, args.command)
+
+@subcommand(
+    argument('block_name', help='block name'),
+    name='start-block'
+)
+def cmd_start_block(args):
+    '''Within a current nestedlog session, start a new block.'''
+
+    import nestedlog.api as nlapi
+    nlapi.start_block(args.block_name)
+
+@subcommand(
+    argument('status', nargs='?', default='auto', help='status of the block'),
+    name='end-block'
+)
+def cmd_end_block(args):
+    '''Within a current nestedlog session, end the current block.'''
+
+    import nestedlog.api as nlapi
+    import nestedlog.data as nld
+    if args.status not in nld.text_to_status:
+        raise Exception(f'Invalid status {args.status}')
+    nlapi.end_block(args.status)
+
+args = cli.parse_args(sys.argv[1:])
+if args.subcommand is None:
+    cli.print_help()
+else:
+    args.func(args)

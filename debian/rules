@@ -1,0 +1,30 @@
+#!/usr/bin/make -f
+
+# Copyright 2021 Stephen Warren <swarren@wwwdotorg.org>
+# SPDX-License-Identifier: MIT
+
+%:
+	dh $@ --with=python3 --buildsystem=pybuild
+
+override_dh_auto_build:
+	$(MAKE)
+	python3 setup.py build
+
+override_dh_auto_test:
+	python3 setup.py test
+
+override_dh_auto_install:
+	python3 setup.py install \
+		--force --root=$(CURDIR)/debian/nestedlog \
+		--no-compile -O0 --install-layout=deb
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/nestedlog
+
+override_dh_installdocs:
+	dh_installdocs -X LICENSE.txt README.md examples
+
+override_dh_auto_clean:
+	python3 setup.py clean
+	$(MAKE) clean
+
+override_dh_fixperms:
+	find . -name nestedlog-helper -exec chmod u+s {} \;
