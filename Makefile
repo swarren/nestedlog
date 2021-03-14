@@ -4,7 +4,8 @@
 DESTDIR ?=
 PREFIX ?= /usr
 
-nestedlog-helper: nestedlog-helper.cpp -lfuse
+nestedlog-helper: LDLIBS+=-lfuse
+nestedlog-helper: nestedlog-helper.cpp
 
 .PHONY: clean
 clean:

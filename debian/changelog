@@ -1,3 +1,9 @@
+nestedlog (4) focal; urgency=medium
+
+  * Fix Makefile syntax for library list.
+
+ -- Stephen Warren <swarren@wwwdotorg.org>  Sat, 14 Mar 2021 17:24:35 -0700
+
 nestedlog (3) focal; urgency=medium
 
   * Add dh-python to Build-Depends.
