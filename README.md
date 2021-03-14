@@ -28,6 +28,12 @@ A wrapper script is provided to run a command, generated HTML and plain-text
 logs in parallel, combine the logs into a multi-part MIME email, and send the
 email using `sendmail` or compatible mail-injection script.
 
+# Downloads
+
+I have a [PPA on launchpad.net](https://launchpad.net/~srwarren/+archive/ubuntu/nestedlog).
+Right now, it only contains builds for Ubuntu 20.04, but perhaps I'll expand
+this in the future.
+
 # Example
 
 The following images were generated from `examples/logged-command.sh`.
