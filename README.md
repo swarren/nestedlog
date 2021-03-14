@@ -17,7 +17,7 @@ email. The layout works in at least:
   * Thunderbird on Linux.
   * K9-Mail on Android.
   * Gmail (web).
-  * Gmail (Android app).
+  * Gmail (Android app, in light or dark theme).
   * MS Exchange online a/k/a Office 365 (web).
   * MS Outlook on Windows.
 * Plain-text. This format is useful for use as a fallback in multi-part MIME

@@ -38,20 +38,17 @@ pre {
 .pad {
     min-height: 1em;
 }
+.block {
+    border-left: 0.5em solid #333;
+}
 .block-header {
     background-color: #333;
-    border-left: 0.5em solid;
-    border-color: inherit;
 }
 .block-content {
-    border-left: 0.5em solid;
-    padding-left: 0.5em;
-    border-color: inherit;
+    border-left: 0.5em solid #000;
 }
 .block-footer {
     background-color: #333;
-    border-left: 0.5em solid;
-    border-color: inherit;
 }
 .block-status-ok {
     color: #4f4;
@@ -59,7 +56,7 @@ pre {
 }
 .block-status-warning {
     color: #ff0;
-    border-color: #ff0;
+    border-color: #dd0;
 }
 .block-status-error {
     color: #f00;
