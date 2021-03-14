@@ -1,3 +1,9 @@
+nestedlog (5) focal; urgency=medium
+
+  * Fix libfuse build-depends.
+
+ -- Stephen Warren <swarren@wwwdotorg.org>  Sat, 14 Mar 2021 17:32:32 -0700
+
 nestedlog (4) focal; urgency=medium
 
   * Fix Makefile syntax for library list.
