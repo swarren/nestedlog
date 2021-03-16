@@ -74,19 +74,23 @@ err:
     fuse_reply_err(req, EBADFD);
 }
 
-static const struct cuse_lowlevel_ops nlhelper_clop = {
-    .open = nlhelper_open,
-    .write = nlhelper_write,
-};
+static const struct cuse_lowlevel_ops nlhelper_clop = []{
+    struct cuse_lowlevel_ops s;
+    s.open = nlhelper_open;
+    s.write = nlhelper_write;
+    return s;
+}();
 
 int cuse_main(std::string &dev_name) {
     const char* cuse_argv[] = {"nestedlog-helper", "-f", "-s"};
     std::string dev_info_devname("DEVNAME=" + dev_name);
     const char* dev_info_argv[] = {dev_info_devname.c_str()};
-    struct cuse_info ci = {
-        .dev_info_argc = ARSIZE(dev_info_argv),
-        .dev_info_argv = dev_info_argv,
-    };
+    struct cuse_info ci = [&]{
+        struct cuse_info s;
+        s.dev_info_argc = ARSIZE(dev_info_argv);
+        s.dev_info_argv = dev_info_argv;
+        return s;
+    }();
     struct fuse_session *se;
     int ret;
 

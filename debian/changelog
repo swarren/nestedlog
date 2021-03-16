@@ -1,3 +1,9 @@
+nestedlog (7) focal; urgency=low
+
+  * C++ syntax fix for g++ in Bionic.
+
+ -- Stephen Warren <swarren@wwwdotorg.org>  Mon, 15 Mar 2021 23:42:33 -0600
+
 nestedlog (6) focal; urgency=medium
 
   * Fix Outlook border-left issue.
