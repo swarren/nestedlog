@@ -3,6 +3,8 @@
 # Copyright 2021 Stephen Warren <swarren@wwwdotorg.org>
 # SPDX-License-Identifier: MIT
 
+script_dir=$(dirname "$0")
+
 echo stdout
 echo stderr >&2
 echo stdout
@@ -61,6 +63,8 @@ echo stdout
 nestedlog run-as-block "inner block" ls -l /xxx
 echo stdout
 nestedlog end-block
+
+nestedlog run-as-block "Python example" "${script_dir}/python-demo.py"
 
 echo stdout
 echo stderr >&2
