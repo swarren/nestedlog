@@ -97,6 +97,7 @@ def gen_log(emitters, cmd):
     sink.start_log()
     sink.start_block(' '.join(cmd))
 
+    block_status = nld.STATUS_AUTO
     try:
         with tempfile.TemporaryDirectory() as ctl_dir:
             sock_path = os.path.join(ctl_dir, 'control')
@@ -137,10 +138,16 @@ def gen_log(emitters, cmd):
                         handle_control_listen_event(fd, event)
                 if len(handlers) == 0:
                     break
+            
+            sp.wait()
+            if sp.returncode != 0:
+                sink.stream_data(nld.STREAM_STDERR, 'ERROR: Process exit code ' + str(sp.returncode))
+                block_status = nld.STATUS_ERROR
     except:
         import traceback
         sink.stream_data(nld.STREAM_STDERR, traceback.format_exc())
+        block_status = nld.STATUS_ERROR
 
-    status = sink.end_block(nld.STATUS_AUTO)
+    status = sink.end_block(block_status)
     sink.end_log()
     return status
