@@ -59,4 +59,7 @@ def _send_cmd(cmd):
     client_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client_sock.connect(sock_path)
     client_sock.sendall(cmd.encode('utf-8'))
+    response = client_sock.recv(1)
     client_sock.close()
+    if response != b'0':
+        raise Exception('nestedlog server command failed')
