@@ -72,7 +72,12 @@ def cmd_run_as_block(args):
     output as its own block.'''
 
     import nestedlog.api as nlapi
-    nlapi.run_as_block(args.block_name, args.command)
+    try:
+        nlapi.run_as_block(args.block_name, args.command)
+    except nlapi.BlockFailedException:
+        sys.exit(1)
+    # Other exceptions are unexpected, so fall back to Python's regular
+    # exception logging and error exit path.
 
 @subcommand(
     argument('block_name', help='block name'),
