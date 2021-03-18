@@ -89,7 +89,7 @@ def gen_log(emitters, cmd):
                 sink.stream_data(nld.STREAM_STDERR, f'nestedlog: Invalid control command "{cmd_s}"\n')
                 import traceback
                 sink.stream_data(nld.STREAM_STDERR, traceback.format_exc())
-                os.write(df, b'1')
+                os.write(fd, b'1')
                 continue
             cmdfunc(*cmdargs)
             os.write(fd, b'0')
