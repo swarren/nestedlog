@@ -18,6 +18,13 @@ def start_block(block_name):
     _send_cmd(f'{CMD_START_BLOCK} {block_name}\n')
 
 def end_block(status):
+    if status in nld.status_to_text:
+        status = nld.status_to_text[status]
+    elif status in nld.text_to_status:
+        pass
+    else:
+        raise Exception('Invalid status ' + str(status))
+
     _send_cmd(f'{CMD_END_BLOCK} {status}\n')
 
 class MarkBlockAsFailedException(Exception):
@@ -42,7 +49,7 @@ def run_python_as_block(block_name, exit_on_fail=False):
         import traceback
         traceback.print_exc(file=sys.stderr)
         status = nld.STATUS_ERROR
-    end_block(nld.status_to_text[status])
+    end_block(status)
     if status != nld.STATUS_AUTO:
         raise BlockFailedException()
 
