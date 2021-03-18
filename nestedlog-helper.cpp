@@ -164,6 +164,11 @@ int main(int argc, char** argv) {
     if (!cuse_pid)
         return cuse_main(dev_name);
 
+    // stdin, stdout only used to communicate from nestedlog server to CUSE
+    // implementation. Keep stderr to report errors from this process.
+    close(0);
+    close(1);
+
     // Wait until device exists
     {
         int waited = 0;
