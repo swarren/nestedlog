@@ -10,6 +10,7 @@
 #include <fuse/fuse.h>
 #include <fuse/fuse_lowlevel.h>
 #include <fuse/fuse_opt.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -22,7 +23,7 @@ int fd_num = 0;
 
 static void nlhelper_open(fuse_req_t req, struct fuse_file_info *fi) {
     // 2 fds; stdout, stderr
-    if (fi->fh >= 2) {
+    if (fd_num >= 2) {
         fuse_reply_err(req, EINVAL);
         return;
     }
@@ -74,10 +75,49 @@ err:
     fuse_reply_err(req, EBADFD);
 }
 
+static void nlhelper_ioctl(fuse_req_t req, int cmd, void *arg,
+    struct fuse_file_info *fi, unsigned int flags, const void *in_buf,
+    size_t in_bufsz, size_t out_bufsz
+) {
+    if (!fi->fh) {
+        fuse_reply_err(req, EBADFD);
+        return;
+    }
+
+    if (flags & FUSE_IOCTL_COMPAT) {
+        fuse_reply_err(req, ENOSYS);
+        return;
+    }
+
+    if (cmd != TCSBRK) {
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
+
+    {
+        char buf[2] = {0};
+        size_t nwrote = write(1, buf, 2);
+        if (nwrote != 2)
+            goto err;
+        size_t nread = read(0, buf, 1);
+        if (nread != 1)
+            goto err;
+    }
+
+    fuse_reply_ioctl(req, 0, NULL, 0);
+    return;
+
+err:
+    perror("nlhelper: fwrite()/fread() for fsync failed");
+    fi->fh = 0;
+    fuse_reply_err(req, EBADFD);
+}
+
 static const struct cuse_lowlevel_ops nlhelper_clop = []{
     struct cuse_lowlevel_ops s{};
     s.open = nlhelper_open;
     s.write = nlhelper_write;
+    s.ioctl = nlhelper_ioctl;
     return s;
 }();
 

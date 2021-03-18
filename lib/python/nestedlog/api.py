@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: MIT
 
 from contextlib import contextmanager
+import nestedlog.data as nld
 import os
 import socket
 import subprocess
 import sys
-import nestedlog.data as nld
+import termios
 
 SOCK_ENV_VAR = 'NESTED_LOG_CONTROL'
 
@@ -14,8 +15,6 @@ CMD_START_BLOCK = 'start-block'
 CMD_END_BLOCK = 'end-block'
 
 def start_block(block_name):
-    sys.stdout.flush()
-    sys.stderr.flush()
     _send_cmd(f'{CMD_START_BLOCK} {block_name}\n')
 
 def end_block(status):
@@ -55,6 +54,16 @@ def run_as_block(block_name, cmd):
             raise MarkBlockAsFailedException()
 
 def _send_cmd(cmd):
+    # Flush data path all the way to nestedlog server.
+    #
+    # These should be no-ops, since stdout/stderr are a character device
+    # rather than pipes.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    # Synchronously flush to nestedlog-helper CUSE server, which will
+    # synchronously flush to main nestedlog server.
+    termios.tcdrain(1)
+
     sock_path = os.environ[SOCK_ENV_VAR]
     client_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client_sock.connect(sock_path)

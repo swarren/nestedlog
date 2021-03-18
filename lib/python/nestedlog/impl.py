@@ -24,15 +24,9 @@ def gen_log(emitters, cmd):
 
     def handle_data_event(fd, event):
         if event & select.POLLIN:
-            while True:
-                try:
-                    data = os.read(fd, 32768)
-                except BlockingIOError:
-                    break
-                if len(data) == 0:
-                    break
-                handler, file_obj = handlers[fd]
-                handler(fd, data)
+            data = os.read(fd, 32768)
+            handler, file_obj = handlers[fd]
+            handler(fd, data)
             event &= ~select.POLLIN
         if event & select.POLLHUP:
             poller.unregister(fd)
@@ -49,14 +43,18 @@ def gen_log(emitters, cmd):
             if len(mbuf) < 2:
                 return
             count = ((mbuf[1] & 0x7f) << 8) | mbuf[0]
-            if len(mbuf) < 2 + count:
-                return
-            mfd = (mbuf[1] >> 7) + 1
-            data = mbuf[2:2+count].decode('utf-8')
-            if mfd == 1:
-                sink.stream_data(nld.STREAM_STDOUT, data)
+            # fsync implementation to flush data pipe
+            if count == 0:
+                os.write(stdin_fd, b'\x00')
             else:
-                sink.stream_data(nld.STREAM_STDERR, data)
+                if len(mbuf) < 2 + count:
+                    return
+                mfd = (mbuf[1] >> 7) + 1
+                data = mbuf[2:2+count].decode('utf-8')
+                if mfd == 1:
+                    sink.stream_data(nld.STREAM_STDOUT, data)
+                else:
+                    sink.stream_data(nld.STREAM_STDERR, data)
             mbuf = mbuf[2+count:]
 
     def handle_stderr_pipe_data(fd, buf):
@@ -115,29 +113,26 @@ def gen_log(emitters, cmd):
             ctl_listen_sock.bind(sock_path)
             ctl_listen_sock.listen(1)
 
-            sp = subprocess.Popen(['nestedlog-helper'] + cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            sp = subprocess.Popen(['nestedlog-helper'] + cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdin_f = sp.stdin
+            stdin_fd = stdin_f.fileno()
             stdout_f = sp.stdout
             stdout_fd = stdout_f.fileno()
-            os.set_blocking(stdout_fd, False)
             handlers[stdout_fd] = (handle_multiplexed_data, stdout_f)
             poller.register(stdout_fd, select.POLLIN | select.POLLHUP)
             stderr_f = sp.stderr
             stderr_fd = stderr_f.fileno()
-            os.set_blocking(stderr_fd, False)
             handlers[stderr_fd] = (handle_stderr_pipe_data, stderr_f)
             poller.register(stderr_fd, select.POLLIN | select.POLLHUP)
-            # FIXME: Closer stdout/stderr sometime
+            # FIXME: Closer stdin/stdout/stderr sometime
 
             while True:
                 events = poller.poll()
-                # Ensure stdout/err are processed first, so that any control
-                # input is processed strictly after draining any cmd output.
-                for fd, event in events:
-                    if fd != ctl_listen_fd:
-                        handle_data_event(fd, event)
                 for fd, event in events:
                     if fd == ctl_listen_fd:
                         handle_control_listen_event(fd, event)
+                    else:
+                        handle_data_event(fd, event)
                 if len(handlers) == 0:
                     break
             
