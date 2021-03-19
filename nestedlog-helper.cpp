@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string>
+#include <asm/termbits.h>
 #include <unistd.h>
 
 #define ARSIZE(x) ((sizeof (x)) / (sizeof (x)[0]))
@@ -89,22 +90,43 @@ static void nlhelper_ioctl(fuse_req_t req, int cmd, void *arg,
         return;
     }
 
-    if (cmd != TCSBRK) {
-        fuse_reply_err(req, EINVAL);
-        return;
+    switch (cmd) {
+        case TCSBRK: {
+            char buf[2] = {0};
+            size_t nwrote = write(1, buf, 2);
+            if (nwrote != 2)
+                goto err;
+            size_t nread = read(0, buf, 1);
+            if (nread != 1)
+                goto err;
+            fuse_reply_ioctl(req, 0, NULL, 0);
+            break;
+        }
+        case TCGETS: {
+            struct termios2 t{
+                // These values are what tcgetattr(1) returns in gdb running
+                // under xfce4-terminal!
+                .c_iflag = IUTF8 | IXON | ICRNL, // 0x4500
+                .c_oflag = ONLCR | OPOST, // 0x5
+                .c_cflag = CREAD | CS8 | B38400, // 0xbf
+                .c_lflag = IEXTEN | ECHOKE | ECHOCTL | ECHOK | ECHOE | ECHO |
+                     ICANON | ISIG, // 0x8a3b
+                .c_line = 0,
+                .c_cc = {0x3, 0x1c, 0x7f, 0x15, 0x4, 0x0, 0x1, 0x0, 0x11, 0x13,
+                    0x1a, 0x0, 0x12, 0xf, 0x17, 0x16},
+                .c_ispeed = B38400,
+                .c_ospeed = B38400,
+            };
+            // This seems to be called with out_bufsz==0 a lot!
+            fuse_reply_ioctl(req, 0, &t, std::min(out_bufsz, sizeof t));
+            break;
+        }
+        default: {
+            fuse_reply_ioctl(req, EINVAL, NULL, 0);
+            break;
+        }
     }
 
-    {
-        char buf[2] = {0};
-        size_t nwrote = write(1, buf, 2);
-        if (nwrote != 2)
-            goto err;
-        size_t nread = read(0, buf, 1);
-        if (nread != 1)
-            goto err;
-    }
-
-    fuse_reply_ioctl(req, 0, NULL, 0);
     return;
 
 err:
