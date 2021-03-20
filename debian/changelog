@@ -1,8 +1,14 @@
+nestedlog (11) focal; urgency=medium
+
+  * Support for Ubuntu 16.04.
+
+ -- Stephen Warren <swarren@wwwdotorg.org>  Sat, 20 Mar 2021 16:15:57 -0600
+
 nestedlog (10) focal; urgency=medium
 
   * Implement TCGETS; the backend of isatty
 
- -- Stephen Warren <swarren@sprint>  Thu, 18 Mar 2021 20:36:54 -0600
+ -- Stephen Warren <swarren@wwwdotorg.org>  Thu, 18 Mar 2021 20:36:54 -0600
 
 nestedlog (9) focal; urgency=medium
 
@@ -16,7 +22,7 @@ nestedlog (9) focal; urgency=medium
   * Fail top-level block if command exits non-zero.
   * run_as_block: catch exceptions, implement a context manager.
 
- -- Stephen Warren <swarren@sprint>  Wed, 17 Mar 2021 21:54:01 -0600
+ -- Stephen Warren <swarren@wwwdotorg.org>  Wed, 17 Mar 2021 21:54:01 -0600
 
 nestedlog (8) focal; urgency=low
 
