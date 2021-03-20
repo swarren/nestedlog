@@ -4,12 +4,15 @@
 DESTDIR ?=
 PREFIX ?= /usr
 
+CPPFLAGS+=-std=c++17
+
+nestedlog-helper: CC=$(CXX)
 nestedlog-helper: LDLIBS+=-lfuse
-nestedlog-helper: nestedlog-helper.cpp
+nestedlog-helper: nestedlog-helper.o
 
 .PHONY: clean
 clean:
-	rm -f nestedlog-helper
+	rm -f nestedlog-helper nestedlog-helper.o
 
 # FIXME: This skips installing Python modules, docs, and example scripts,
 # because we don't need to do that when building via Debian packaging. This

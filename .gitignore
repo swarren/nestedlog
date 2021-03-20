@@ -11,3 +11,4 @@ debian/nestedlog.substvars
 debian/nestedlog/
 lib/python/nestedlog.egg-info/
 nestedlog-helper
+nestedlog-helper.o

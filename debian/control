@@ -6,7 +6,7 @@ Section: devel
 Priority: optional
 Maintainer: Stephen Warren <swarren@wwwdotorg.org>
 Build-Depends:
- , debhelper (>= 11)
+ , debhelper (>= 9)
  , dh-python
  , libfuse-dev
  , python3-dev
